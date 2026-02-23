@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pacing Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12110f;
+    --surface: #1c1a17;
+    --surface2: #252220;
+    --surface3: #2e2b27;
+    --border: #333029;
+    --text: #e5ddd0;
+    --text-muted: #7a7060;
+    --text-dim: #4a4538;
+    --low: #b85c55;
+    --low-bg: #2a1512;
+    --med: #c09040;
+    --med-bg: #251e0e;
+    --high: #6a9e6a;
+    --high-bg: #111e11;
+    --accent: #c4a872;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100dvh;
+    max-width: 460px;
+    margin: 0 auto;
+    padding-bottom: 100px;
+  }
+
+  /* NAV */
+  .nav {
+    position: fixed;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 460px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    padding: 12px 4px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn svg { width: 20px; height: 20px; stroke-width: 1.5; }
+
+  /* VIEWS */
+  .view { display: none; padding: 28px 20px 0; animation: fadeIn 0.2s ease; }
+  .view.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* TYPOGRAPHY */
+  h1 {
+    font-family: 'Lora', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    margin-top: 22px;
+  }
+
+  /* ENERGY BUTTONS */
+  .energy-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .energy-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 14px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .energy-btn .energy-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  .energy-btn[data-val="low"].selected { background: var(--low-bg); border-color: var(--low); color: var(--low); }
+  .energy-btn[data-val="med"].selected { background: var(--med-bg); border-color: var(--med); color: var(--med); }
+  .energy-btn[data-val="high"].selected { background: var(--high-bg); border-color: var(--high); color: var(--high); }
+
+  /* MOOD */
+  .mood-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mood-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mood-btn.selected {
+    background: var(--surface3);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* SYMPTOMS */
+  .symptom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .symptom-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .symptom-btn .sym-icon { font-size: 16px; }
+
+  .symptom-btn.selected {
+    background: var(--surface3);
+    border-color: #a07060;
+    color: var(--text);
+  }
+
+  /* SENSORY OVERWHELM SECTION */
+  .overwhelm-card {
+    background: linear-gradient(135deg, #1e1a14, #1a1714);
+    border: 1px solid #3a3020;
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 8px;
+  }
+
+  .overwhelm-card .card-title {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .overwhelm-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .overwhelm-level {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .overwhelm-level .level-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .overwhelm-level .level-signs {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .overwhelm-level[data-level="0"].selected { border-color: var(--high); background: var(--high-bg); }
+  .overwhelm-level[data-level="0"].selected .level-name { color: var(--high); }
+  .overwhelm-level[data-level="1"].selected { border-color: var(--med); background: var(--med-bg); }
+  .overwhelm-level[data-level="1"].selected .level-name { color: var(--med); }
+  .overwhelm-level[data-level="2"].selected { border-color: #c07050; background: #221510; }
+  .overwhelm-level[data-level="2"].selected .level-name { color: #c07050; }
+  .overwhelm-level[data-level="3"].selected { border-color: var(--low); background: var(--low-bg); }
+  .overwhelm-level[data-level="3"].selected .level-name { color: var(--low); }
+
+  /* INPUT FIELDS */
+  .field {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    padding: 12px 14px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  .field:focus { border-color: var(--accent); }
+  .field::placeholder { color: var(--text-dim); }
+
+  .rest-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rest-row .field { width: 80px; text-align: center; }
+  .rest-label { font-size: 13px; color: var(--text-muted); }
+
+  /* LOG BUTTON */
+  .log-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #12110f;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 16px;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+
+  .log-btn:active { opacity: 0.8; transform: scale(0.98); }
+
+  /* SUCCESS TOAST */
+  .toast {
+    position: fixed;
+    top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: var(--high-bg);
+    border: 1px solid var(--high);
+    color: var(--high);
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* HISTORY VIEW */
+  .history-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 60px 20px;
+    font-style: italic;
+  }
+
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .entry-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .entry-energy {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .entry-energy.low { background: var(--low-bg); color: var(--low); }
+  .entry-energy.med { background: var(--med-bg); color: var(--med); }
+  .entry-energy.high { background: var(--high-bg); color: var(--high); }
+
+  .entry-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  .tag {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  .entry-note {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .overwhelm-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  /* PATTERNS VIEW */
+  .pattern-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .pattern-title {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .bar-label { font-size: 12px; color: var(--text-muted); width: 42px; flex-shrink: 0; }
+
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+
+  .bar-fill.low { background: var(--low); }
+  .bar-fill.med { background: var(--med); }
+  .bar-fill.high { background: var(--high); }
+
+  .bar-count { font-size: 11px; color: var(--text-dim); width: 20px; text-align: right; }
+
+  .pattern-insight {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+  }
+
+  .no-data {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: color 0.15s;
+  }
+  .delete-btn:hover { color: var(--low); }
+
+  /* SCROLL */
+  .irritant-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 5px 6px;
+    border-radius: 6px;
+    transition: background 0.1s, color 0.1s;
+    user-select: none;
+  }
+
+  .irritant-item:hover { background: var(--surface3); color: var(--text); }
+
+  .irritant-item input[type="checkbox"] {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .irritant-item input[type="checkbox"]:checked {
+    background: #a8b870;
+    border-color: #a8b870;
+  }
+
+  .irritant-item input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -1px; left: 2px;
+    font-size: 11px;
+    color: #12110f;
+    font-weight: 700;
+  }
+
+  .irritant-item:has(input:checked) { color: var(--text); }
+
+  ::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast">✓ Logged</div>
+
+<!-- LOG VIEW -->
+<div class="view active" id="view-log">
+  <h1>How are you?</h1>
+  <p class="subtitle" id="log-subtitle">log as little or as much as you want · nothing is required</p>
+
+  <div class="section-label">Energy</div>
+  <div class="energy-row">
+    <button class="energy-btn" data-val="low" onclick="selectEnergy(this)">
+      <span class="energy-icon">🪫</span>Low
+    </button>
+    <button class="energy-btn" data-val="med" onclick="selectEnergy(this)">
+      <span class="energy-icon">🔋</span>Medium
+    </button>
+    <button class="energy-btn" data-val="high" onclick="selectEnergy(this)">
+      <span class="energy-icon">⚡</span>High
+    </button>
+  </div>
+
+  <div class="section-label">Mood</div>
+  <div class="mood-row">
+    <button class="mood-btn" onclick="toggleMood(this)">okay</button>
+    <button class="mood-btn" onclick="toggleMood(this)">anxious</button>
+    <button class="mood-btn" onclick="toggleMood(this)">flat</button>
+    <button class="mood-btn" onclick="toggleMood(this)">irritable</button>
+    <button class="mood-btn" onclick="toggleMood(this)">content</button>
+    <button class="mood-btn" onclick="toggleMood(this)">overwhelmed</button>
+    <button class="mood-btn" onclick="toggleMood(this)">foggy</button>
+    <button class="mood-btn" onclick="toggleMood(this)">sad</button>
+  </div>
+
+  <div class="section-label">Physical symptoms</div>
+  <div class="symptom-grid">
+    <button class="symptom-btn" data-sym="brain fog" onclick="toggleSymptom(this)">
+      <span class="sym-icon">🌫️</span> Brain fog
+    </button>
+    <button class="symptom-btn" data-sym="fatigue" onclick="toggleSymptom(this)">
+      <span class="sym-icon">🪨</span> Fatigue/heaviness
+    </button>
+    <button class="symptom-btn" data-sym="headache" onclick="toggleSymptom(this)">
+      <span class="sym-icon">💢</span> Headache
+    </button>
+    <button class="symptom-btn" data-sym="pain/tension" onclick="toggleSymptom(this)">
+      <span class="sym-icon">⚡</span> Pain/tension
+    </button>
+    <button class="symptom-btn" data-sym="nausea" onclick="toggleSymptom(this)">
+      <span class="sym-icon">🌀</span> Nausea
+    </button>
+    <button class="symptom-btn" data-sym="sensory overwhelm" onclick="toggleSymptom(this)">
+      <span class="sym-icon">📡</span> Sensory overwhelm
+    </button>
+  </div>
+
+  <!-- SENSORY OVERWHELM RECOGNIZER -->
+  <div class="overwhelm-card" style="margin-top: 22px;">
+    <div class="card-title">📡 Sensory load — where are you?</div>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+      Overwhelm builds gradually. Pick the description that fits right now, even if you feel "fine."
+    </p>
+    <div class="overwhelm-levels">
+      <div class="overwhelm-level" data-level="0" onclick="selectOverwhelm(this)">
+        <div class="level-name">🟢 Regulated</div>
+        <div class="level-signs">Sounds & lights feel normal. Easy to focus. No urge to escape.</div>
+      </div>
+      <div class="overwhelm-level" data-level="1" onclick="selectOverwhelm(this)">
+        <div class="level-name">🟡 Building</div>
+        <div class="level-signs">Slightly irritated by noise or light. Harder to concentrate. Might be moving faster or tensing up without noticing.</div>
+      </div>
+      <div class="overwhelm-level" data-level="2" onclick="selectOverwhelm(this)">
+        <div class="level-name">🟠 Elevated</div>
+        <div class="level-signs">Sounds feel too loud. Bright lights bother you. Short fuse. Want to be alone or in a quiet space. Heart rate may feel elevated.</div>
+      </div>
+      <div class="overwhelm-level" data-level="3" onclick="selectOverwhelm(this)">
+        <div class="level-name">🔴 Overloaded</div>
+        <div class="level-signs">Hard to process words or instructions. Might be shutting down or melting down. Need to leave the environment now.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOD & WATER -->
+  <div class="overwhelm-card" style="margin-top: 22px; border-color: #2a2d1a;">
+    <div class="card-title" style="color: #a8b870;">🥗 Food & hydration</div>
+
+    <div style="margin-bottom:14px;">
+      <div class="section-label" style="margin-top:0;">Eaten in the last 3 hours?</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="mood-btn" data-food="yes" onclick="toggleFoodBtn(this,'eaten')">yes</button>
+        <button class="mood-btn" data-food="no" onclick="toggleFoodBtn(this,'eaten')">not yet</button>
+        <button class="mood-btn" data-food="snack" onclick="toggleFoodBtn(this,'eaten')">just a snack</button>
+      </div>
+      <textarea class="field" id="food-field" rows="2" oninput="saveDraft()" placeholder="what did you have? (optional)"></textarea>
+
+      <!-- IRRITANTS DROPDOWN -->
+      <div style="margin-top:10px;">
+        <button onclick="toggleIrritantPanel()" id="irritant-toggle" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:border-color 0.15s;">
+          <span id="irritant-label">any known irritants?</span>
+          <span id="irritant-chevron" style="font-size:10px;transition:transform 0.2s;">▼</span>
+        </button>
+        <div id="irritant-panel" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <label class="irritant-item"><input type="checkbox" value="gluten" onchange="updateIrritants()"> Gluten</label>
+            <label class="irritant-item"><input type="checkbox" value="dairy" onchange="updateIrritants()"> Dairy</label>
+            <label class="irritant-item"><input type="checkbox" value="refined sugar" onchange="updateIrritants()"> Refined sugar</label>
+            <label class="irritant-item"><input type="checkbox" value="artificial sweeteners" onchange="updateIrritants()"> Artificial sweeteners</label>
+            <label class="irritant-item"><input type="checkbox" value="caffeine" onchange="updateIrritants()"> Caffeine</label>
+            <label class="irritant-item"><input type="checkbox" value="alcohol" onchange="updateIrritants()"> Alcohol</label>
+            <label class="irritant-item"><input type="checkbox" value="soy" onchange="updateIrritants()"> Soy</label>
+            <label class="irritant-item"><input type="checkbox" value="corn" onchange="updateIrritants()"> Corn</label>
+            <label class="irritant-item"><input type="checkbox" value="eggs" onchange="updateIrritants()"> Eggs</label>
+            <label class="irritant-item"><input type="checkbox" value="nightshades" onchange="updateIrritants()"> Nightshades</label>
+            <label class="irritant-item"><input type="checkbox" value="high histamine" onchange="updateIrritants()"> High histamine</label>
+            <label class="irritant-item"><input type="checkbox" value="FODMAPs" onchange="updateIrritants()"> FODMAPs</label>
+            <label class="irritant-item"><input type="checkbox" value="tree nuts" onchange="updateIrritants()"> Tree nuts</label>
+            <label class="irritant-item"><input type="checkbox" value="shellfish" onchange="updateIrritants()"> Shellfish</label>
+            <label class="irritant-item"><input type="checkbox" value="msg" onchange="updateIrritants()"> MSG</label>
+            <label class="irritant-item"><input type="checkbox" value="ultra-processed" onchange="updateIrritants()"> Ultra-processed</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label" style="margin-top:0;">Water today</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="mood-btn" data-water="barely" onclick="toggleFoodBtn(this,'water')">barely any</button>
+        <button class="mood-btn" data-water="some" onclick="toggleFoodBtn(this,'water')">some</button>
+        <button class="mood-btn" data-water="good" onclick="toggleFoodBtn(this,'water')">good amount</button>
+        <button class="mood-btn" data-water="lots" onclick="toggleFoodBtn(this,'water')">well hydrated</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top: 22px;">What have you been doing?</div>
+  <textarea class="field" id="activity-field" rows="2" oninput="saveDraft()" placeholder="e.g. work calls, scrolling, dog walk, resting..."></textarea>
+
+  <div class="section-label">Recovery since last log</div>
+  <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:10px;">
+    Any intentional downtime — lying down, quiet break, nap, screens off, sitting outside. Not scrolling. Roughly how many minutes?
+  </p>
+  <div class="rest-row">
+    <input class="field" id="rest-field" type="number" min="0" placeholder="0" oninput="saveDraft()">
+    <span class="rest-label">minutes</span>
+  </div>
+
+  <!-- WELLDО BIOMETRICS -->
+  <div class="overwhelm-card" style="margin-top: 22px; border-color: #2a3030;">
+    <div class="card-title" style="color: #7ab8b8;">⌚ WellDo / Apple Watch</div>
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;">
+      Optional — flip to WellDo, grab your numbers, come back. <span style="color:#7ab8b8;">Draft saves automatically.</span>
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">Body Battery %</div>
+        <input class="field" id="body-battery" type="number" min="0" max="100" placeholder="e.g. 42" oninput="saveDraft()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">Stress Score</div>
+        <input class="field" id="stress-score" type="number" min="0" max="100" placeholder="e.g. 31" oninput="saveDraft()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">HRV (ms)</div>
+        <input class="field" id="hrv" type="number" min="0" placeholder="e.g. 54" oninput="saveDraft()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">Resting HR (bpm)</div>
+        <input class="field" id="resting-hr" type="number" min="0" placeholder="e.g. 68" oninput="saveDraft()">
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:22px;">Notes</div>
+  <textarea class="field" id="notes-field" rows="2" placeholder="anything else worth noting..." oninput="saveDraft()"></textarea>
+
+  <button class="log-btn" onclick="saveEntry()">Log this moment — fill in as little or as much as you like</button>
+</div>
+
+<!-- HISTORY VIEW -->
+<div class="view" id="view-history">
+  <h1>History</h1>
+  <p class="subtitle">your recent logs</p>
+  <div id="history-list"></div>
+</div>
+
+<!-- PATTERNS VIEW -->
+<div class="view" id="view-patterns">
+  <h1>Patterns</h1>
+  <p class="subtitle">spot your boom-bust cycles</p>
+  <div id="patterns-content"></div>
+  <button class="log-btn" onclick="exportCSV()" style="margin-top:16px; background: var(--surface2); color: var(--accent); border: 1.5px solid var(--border);">↓ Export to CSV</button>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);overflow-y:auto;">
+  <div style="background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;margin-top:40px;min-height:calc(100dvh - 40px);padding:24px 20px 120px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+      <h1 style="font-family:Lora,serif;font-size:22px;font-weight:400;">Edit entry</h1>
+      <button onclick="closeEdit()" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:4px;">×</button>
+    </div>
+    <p id="edit-timestamp" style="font-size:12px;color:var(--text-dim);margin-bottom:24px;"></p>
+
+    <div class="section-label">Energy</div>
+    <div class="energy-row" id="edit-energy-row">
+      <button class="energy-btn" data-val="low" onclick="editSelectEnergy(this)"><span class="energy-icon">🪫</span>Low</button>
+      <button class="energy-btn" data-val="med" onclick="editSelectEnergy(this)"><span class="energy-icon">🔋</span>Medium</button>
+      <button class="energy-btn" data-val="high" onclick="editSelectEnergy(this)"><span class="energy-icon">⚡</span>High</button>
+    </div>
+
+    <div class="section-label">Mood</div>
+    <div class="mood-row" id="edit-mood-row">
+      <button class="mood-btn" onclick="editToggleMood(this)">okay</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">anxious</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">flat</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">irritable</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">content</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">overwhelmed</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">foggy</button>
+      <button class="mood-btn" onclick="editToggleMood(this)">sad</button>
+    </div>
+
+    <div class="section-label">Physical symptoms</div>
+    <div class="symptom-grid" id="edit-symptom-grid">
+      <button class="symptom-btn" data-sym="brain fog" onclick="editToggleSym(this)"><span class="sym-icon">🌫️</span> Brain fog</button>
+      <button class="symptom-btn" data-sym="fatigue" onclick="editToggleSym(this)"><span class="sym-icon">🪨</span> Fatigue/heaviness</button>
+      <button class="symptom-btn" data-sym="headache" onclick="editToggleSym(this)"><span class="sym-icon">💢</span> Headache</button>
+      <button class="symptom-btn" data-sym="pain/tension" onclick="editToggleSym(this)"><span class="sym-icon">⚡</span> Pain/tension</button>
+      <button class="symptom-btn" data-sym="nausea" onclick="editToggleSym(this)"><span class="sym-icon">🌀</span> Nausea</button>
+      <button class="symptom-btn" data-sym="sensory overwhelm" onclick="editToggleSym(this)"><span class="sym-icon">📡</span> Sensory overwhelm</button>
+    </div>
+
+    <div class="overwhelm-card" style="margin-top:22px;">
+      <div class="card-title">📡 Sensory load</div>
+      <div class="overwhelm-levels" id="edit-overwhelm-levels">
+        <div class="overwhelm-level" data-level="0" onclick="editSelectOverwhelm(this)"><div class="level-name">🟢 Regulated</div><div class="level-signs">Sounds & lights feel normal. Easy to focus.</div></div>
+        <div class="overwhelm-level" data-level="1" onclick="editSelectOverwhelm(this)"><div class="level-name">🟡 Building</div><div class="level-signs">Slightly irritated by noise or light. Harder to concentrate.</div></div>
+        <div class="overwhelm-level" data-level="2" onclick="editSelectOverwhelm(this)"><div class="level-name">🟠 Elevated</div><div class="level-signs">Sounds feel too loud. Short fuse. Want to be alone.</div></div>
+        <div class="overwhelm-level" data-level="3" onclick="editSelectOverwhelm(this)"><div class="level-name">🔴 Overloaded</div><div class="level-signs">Hard to process. Shutting down or melting down.</div></div>
+      </div>
+    </div>
+
+    <div class="overwhelm-card" style="margin-top:22px;border-color:#2a2d1a;">
+      <div class="card-title" style="color:#a8b870;">🥗 Food & hydration</div>
+      <div style="margin-bottom:14px;">
+        <div class="section-label" style="margin-top:0;">Eaten in the last 3 hours?</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;" id="edit-eaten-row">
+          <button class="mood-btn" data-food="yes" onclick="editToggleFoodBtn(this,'eaten')">yes</button>
+          <button class="mood-btn" data-food="no" onclick="editToggleFoodBtn(this,'eaten')">not yet</button>
+          <button class="mood-btn" data-food="snack" onclick="editToggleFoodBtn(this,'eaten')">just a snack</button>
+        </div>
+        <textarea class="field" id="edit-food-field" rows="2" placeholder="what did you have? (optional)"></textarea>
+        <div style="margin-top:10px;">
+          <button onclick="toggleEditIrritantPanel()" id="edit-irritant-toggle" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+            <span id="edit-irritant-label">any known irritants?</span>
+            <span id="edit-irritant-chevron" style="font-size:10px;transition:transform 0.2s;">▼</span>
+          </button>
+          <div id="edit-irritant-panel" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              <label class="irritant-item"><input type="checkbox" value="gluten" onchange="updateEditIrritants()"> Gluten</label>
+              <label class="irritant-item"><input type="checkbox" value="dairy" onchange="updateEditIrritants()"> Dairy</label>
+              <label class="irritant-item"><input type="checkbox" value="refined sugar" onchange="updateEditIrritants()"> Refined sugar</label>
+              <label class="irritant-item"><input type="checkbox" value="artificial sweeteners" onchange="updateEditIrritants()"> Artificial sweeteners</label>
+              <label class="irritant-item"><input type="checkbox" value="caffeine" onchange="updateEditIrritants()"> Caffeine</label>
+              <label class="irritant-item"><input type="checkbox" value="alcohol" onchange="updateEditIrritants()"> Alcohol</label>
+              <label class="irritant-item"><input type="checkbox" value="soy" onchange="updateEditIrritants()"> Soy</label>
+              <label class="irritant-item"><input type="checkbox" value="corn" onchange="updateEditIrritants()"> Corn</label>
+              <label class="irritant-item"><input type="checkbox" value="eggs" onchange="updateEditIrritants()"> Eggs</label>
+              <label class="irritant-item"><input type="checkbox" value="nightshades" onchange="updateEditIrritants()"> Nightshades</label>
+              <label class="irritant-item"><input type="checkbox" value="high histamine" onchange="updateEditIrritants()"> High histamine</label>
+              <label class="irritant-item"><input type="checkbox" value="FODMAPs" onchange="updateEditIrritants()"> FODMAPs</label>
+              <label class="irritant-item"><input type="checkbox" value="tree nuts" onchange="updateEditIrritants()"> Tree nuts</label>
+              <label class="irritant-item"><input type="checkbox" value="shellfish" onchange="updateEditIrritants()"> Shellfish</label>
+              <label class="irritant-item"><input type="checkbox" value="msg" onchange="updateEditIrritants()"> MSG</label>
+              <label class="irritant-item"><input type="checkbox" value="ultra-processed" onchange="updateEditIrritants()"> Ultra-processed</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label" style="margin-top:0;">Water today</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="edit-water-row">
+          <button class="mood-btn" data-water="barely" onclick="editToggleFoodBtn(this,'water')">barely any</button>
+          <button class="mood-btn" data-water="some" onclick="editToggleFoodBtn(this,'water')">some</button>
+          <button class="mood-btn" data-water="good" onclick="editToggleFoodBtn(this,'water')">good amount</button>
+          <button class="mood-btn" data-water="lots" onclick="editToggleFoodBtn(this,'water')">well hydrated</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overwhelm-card" style="margin-top:22px;border-color:#2a3030;">
+      <div class="card-title" style="color:#7ab8b8;">⌚ WellDo / Apple Watch</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">Body Battery %</div><input class="field" id="edit-body-battery" type="number" min="0" max="100" placeholder="e.g. 42"></div>
+        <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">Stress Score</div><input class="field" id="edit-stress-score" type="number" min="0" max="100" placeholder="e.g. 31"></div>
+        <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">HRV (ms)</div><input class="field" id="edit-hrv" type="number" min="0" placeholder="e.g. 54"></div>
+        <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">Resting HR (bpm)</div><input class="field" id="edit-resting-hr" type="number" min="0" placeholder="e.g. 68"></div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:22px;">What have you been doing?</div>
+    <textarea class="field" id="edit-activity-field" rows="2" placeholder="e.g. work calls, scrolling, dog walk..."></textarea>
+
+    <div class="section-label">Recovery since last log</div>
+    <div class="rest-row"><input class="field" id="edit-rest-field" type="number" min="0" placeholder="0"><span class="rest-label">minutes</span></div>
+
+    <div class="section-label">Notes</div>
+    <textarea class="field" id="edit-notes-field" rows="2" placeholder="anything else worth noting..."></textarea>
+
+    <button class="log-btn" onclick="saveEdit()" style="margin-top:24px;">Save changes</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" id="nav-log" onclick="showView('log')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    Log
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="showView('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+    History
+  </button>
+  <button class="nav-btn" id="nav-patterns" onclick="showView('patterns')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Patterns
+  </button>
+</nav>
+
+<script>
+  // STATE
+  let selectedEnergy = null;
+  let selectedMoods = new Set();
+  let selectedSymptoms = new Set();
+  let selectedOverwhelm = null;
+  let selectedEaten = null;
+  let selectedWater = null;
+  let selectedIrritants = new Set();
+
+  // DRAFT - persists while switching apps
+  function saveDraft() {
+    const draft = {
+      energy: selectedEnergy,
+      moods: [...selectedMoods],
+      symptoms: [...selectedSymptoms],
+      overwhelm: selectedOverwhelm,
+      activity: document.getElementById('activity-field').value,
+      rest: document.getElementById('rest-field').value,
+      notes: document.getElementById('notes-field').value,
+      bodyBattery: document.getElementById('body-battery').value,
+      stressScore: document.getElementById('stress-score').value,
+      hrv: document.getElementById('hrv').value,
+      restingHr: document.getElementById('resting-hr').value,
+      eaten: selectedEaten,
+      food: document.getElementById('food-field').value,
+      irritants: [...selectedIrritants],
+      water: selectedWater
+    };
+    localStorage.setItem('pacing_draft', JSON.stringify(draft));
+  }
+
+  function restoreDraft() {
+    try {
+      const draft = JSON.parse(localStorage.getItem('pacing_draft'));
+      if (!draft) return;
+      if (draft.energy) {
+        const btn = document.querySelector(`.energy-btn[data-val="${draft.energy}"]`);
+        if (btn) { btn.classList.add('selected'); selectedEnergy = draft.energy; }
+      }
+      (draft.moods || []).forEach(m => {
+        selectedMoods.add(m);
+        document.querySelectorAll('.mood-btn').forEach(b => { if (b.textContent.trim() === m) b.classList.add('selected'); });
+      });
+      (draft.symptoms || []).forEach(s => {
+        selectedSymptoms.add(s);
+        document.querySelectorAll('.symptom-btn').forEach(b => { if (b.dataset.sym === s) b.classList.add('selected'); });
+      });
+      if (draft.overwhelm !== null && draft.overwhelm !== undefined) {
+        const el = document.querySelector(`.overwhelm-level[data-level="${draft.overwhelm}"]`);
+        if (el) { el.classList.add('selected'); selectedOverwhelm = draft.overwhelm; }
+      }
+      if (draft.activity) document.getElementById('activity-field').value = draft.activity;
+      if (draft.rest) document.getElementById('rest-field').value = draft.rest;
+      if (draft.notes) document.getElementById('notes-field').value = draft.notes;
+      if (draft.bodyBattery) document.getElementById('body-battery').value = draft.bodyBattery;
+      if (draft.stressScore) document.getElementById('stress-score').value = draft.stressScore;
+      if (draft.hrv) document.getElementById('hrv').value = draft.hrv;
+      if (draft.restingHr) document.getElementById('resting-hr').value = draft.restingHr;
+      if (draft.eaten) {
+        selectedEaten = draft.eaten;
+        document.querySelectorAll('[data-food]').forEach(b => { if (b.dataset.food === draft.eaten) b.classList.add('selected'); });
+      }
+      if (draft.food) document.getElementById('food-field').value = draft.food;
+      if (draft.irritants && draft.irritants.length) {
+        selectedIrritants = new Set(draft.irritants);
+        document.querySelectorAll('#irritant-panel input').forEach(c => {
+          if (selectedIrritants.has(c.value)) c.checked = true;
+        });
+        document.getElementById('irritant-label').textContent = draft.irritants.join(', ');
+      }
+      if (draft.water) {
+        selectedWater = draft.water;
+        document.querySelectorAll('[data-water]').forEach(b => { if (b.dataset.water === draft.water) b.classList.add('selected'); });
+      }
+    } catch(e) {}
+  }
+
+  // STORAGE
+  function getEntries() {
+    try { return JSON.parse(localStorage.getItem('pacing_entries') || '[]'); }
+    catch { return []; }
+  }
+
+  function saveEntries(entries) {
+    localStorage.setItem('pacing_entries', JSON.stringify(entries));
+  }
+
+  // SELECTORS
+  function selectEnergy(btn) {
+    document.querySelectorAll('.energy-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedEnergy = btn.dataset.val;
+    saveDraft();
+  }
+
+  function toggleMood(btn) {
+    btn.classList.toggle('selected');
+    const mood = btn.textContent.trim();
+    if (selectedMoods.has(mood)) selectedMoods.delete(mood);
+    else selectedMoods.add(mood);
+    saveDraft();
+  }
+
+  function toggleSymptom(btn) {
+    btn.classList.toggle('selected');
+    const sym = btn.dataset.sym;
+    if (selectedSymptoms.has(sym)) selectedSymptoms.delete(sym);
+    else selectedSymptoms.add(sym);
+    saveDraft();
+  }
+
+  function selectOverwhelm(el) {
+    document.querySelectorAll('.overwhelm-level').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedOverwhelm = parseInt(el.dataset.level);
+    saveDraft();
+  }
+
+  function toggleFoodBtn(btn, group) {
+    const attr = group === 'eaten' ? 'data-food' : 'data-water';
+    document.querySelectorAll(`[${attr}]`).forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group === 'eaten') selectedEaten = btn.dataset.food;
+    else selectedWater = btn.dataset.water;
+    saveDraft();
+  }
+
+  function toggleIrritantPanel() {
+    const panel = document.getElementById('irritant-panel');
+    const chevron = document.getElementById('irritant-chevron');
+    const btn = document.getElementById('irritant-toggle');
+    const open = panel.style.display === 'none';
+    panel.style.display = open ? 'block' : 'none';
+    chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+    btn.style.borderRadius = open ? 'var(--radius-sm) var(--radius-sm) 0 0' : 'var(--radius-sm)';
+    btn.style.borderBottomColor = open ? 'transparent' : 'var(--border)';
+  }
+
+  function updateIrritants() {
+    selectedIrritants = new Set(
+      [...document.querySelectorAll('#irritant-panel input:checked')].map(c => c.value)
+    );
+    const label = document.getElementById('irritant-label');
+    if (selectedIrritants.size === 0) label.textContent = 'any known irritants?';
+    else label.textContent = [...selectedIrritants].join(', ');
+    saveDraft();
+  }
+
+  // SAVE
+  function saveEntry() {
+    const entry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      energy: selectedEnergy,
+      moods: [...selectedMoods],
+      symptoms: [...selectedSymptoms],
+      overwhelm: selectedOverwhelm,
+      activity: document.getElementById('activity-field').value.trim(),
+      rest: parseInt(document.getElementById('rest-field').value) || 0,
+      notes: document.getElementById('notes-field').value.trim(),
+      bodyBattery: parseInt(document.getElementById('body-battery').value) || null,
+      stressScore: parseInt(document.getElementById('stress-score').value) || null,
+      hrv: parseInt(document.getElementById('hrv').value) || null,
+      restingHr: parseInt(document.getElementById('resting-hr').value) || null,
+      eaten: selectedEaten,
+      food: document.getElementById('food-field').value.trim(),
+      irritants: [...selectedIrritants],
+      water: selectedWater
+    };
+
+    const entries = getEntries();
+    entries.unshift(entry);
+    saveEntries(entries);
+
+    // reset
+    selectedEnergy = null;
+    selectedMoods = new Set();
+    selectedSymptoms = new Set();
+    selectedOverwhelm = null;
+    document.querySelectorAll('.energy-btn, .mood-btn, .symptom-btn, .overwhelm-level').forEach(el => el.classList.remove('selected'));
+    document.getElementById('activity-field').value = '';
+    document.getElementById('rest-field').value = '';
+    document.getElementById('notes-field').value = '';
+    document.getElementById('body-battery').value = '';
+    document.getElementById('stress-score').value = '';
+    document.getElementById('hrv').value = '';
+    document.getElementById('resting-hr').value = '';
+    document.getElementById('food-field').value = '';
+    document.querySelectorAll('[data-food],[data-water]').forEach(b => b.classList.remove('selected'));
+    selectedEaten = null;
+    selectedWater = null;
+    selectedIrritants = new Set();
+    document.querySelectorAll('#irritant-panel input').forEach(c => c.checked = false);
+    document.getElementById('irritant-label').textContent = 'any known irritants?';
+    document.getElementById('irritant-panel').style.display = 'none';
+    document.getElementById('irritant-chevron').style.transform = 'rotate(0deg)';
+    localStorage.removeItem('pacing_draft');
+
+    showToast();
+    updateSubtitle();
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function updateSubtitle() {
+    const entries = getEntries();
+    if (entries.length === 0) return;
+    const last = new Date(entries[0].timestamp);
+    const mins = Math.round((Date.now() - last) / 60000);
+    const sub = document.getElementById('log-subtitle');
+    if (mins < 60) sub.textContent = `last logged ${mins}m ago`;
+    else if (mins < 1440) sub.textContent = `last logged ${Math.round(mins/60)}h ago`;
+    else sub.textContent = `last logged ${Math.round(mins/1440)}d ago`;
+  }
+
+  // VIEW SWITCHER
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.getElementById('nav-' + name).classList.add('active');
+
+    if (name === 'history') renderHistory();
+    if (name === 'patterns') renderPatterns();
+  }
+
+  // FORMAT
+  function formatTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' +
+      d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  const overwhelmLabels = ['🟢 Regulated', '🟡 Building', '🟠 Elevated', '🔴 Overloaded'];
+  const overwhelmColors = ['#6a9e6a', '#c09040', '#c07050', '#b85c55'];
+
+  // HISTORY
+  function renderHistory() {
+    const entries = getEntries();
+    const el = document.getElementById('history-list');
+
+    if (entries.length === 0) {
+      el.innerHTML = '<p class="history-empty">No logs yet.<br>Tap Log to get started.</p>';
+      return;
+    }
+
+    el.innerHTML = entries.map(e => `
+      <div class="entry-card">
+        <div class="entry-header">
+          <span class="entry-time">${formatTime(e.timestamp)}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${e.energy ? `<span class="entry-energy ${e.energy}">${e.energy}</span>` : ''}
+            <button class="delete-btn" onclick="openEdit(${e.id})" style="color:var(--text-dim);font-size:14px;" title="Edit">✏️</button>
+            <button class="delete-btn" onclick="deleteEntry(${e.id})">×</button>
+          </div>
+        </div>
+        ${(e.moods?.length || e.symptoms?.length) ? `
+          <div class="entry-tags">
+            ${(e.moods || []).map(m => `<span class="tag">${m}</span>`).join('')}
+            ${(e.symptoms || []).map(s => `<span class="tag">${s}</span>`).join('')}
+          </div>` : ''}
+        ${e.overwhelm !== null && e.overwhelm !== undefined ? `
+          <div style="margin: 4px 0;">
+            <span style="font-size:11px; color:${overwhelmColors[e.overwhelm]}; background:${overwhelmColors[e.overwhelm]}18; padding:2px 8px; border-radius:999px;">${overwhelmLabels[e.overwhelm]}</span>
+          </div>` : ''}
+        ${(e.bodyBattery != null || e.stressScore != null || e.hrv != null || e.restingHr != null) ? `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">
+            ${e.bodyBattery != null ? `<span style="font-size:11px;background:#1a2a1a;color:#7ab8b8;padding:2px 8px;border-radius:999px;">🔋 ${e.bodyBattery}%</span>` : ''}
+            ${e.stressScore != null ? `<span style="font-size:11px;background:#1a1a2a;color:#a08ab8;padding:2px 8px;border-radius:999px;">⚡ stress ${e.stressScore}</span>` : ''}
+            ${e.hrv != null ? `<span style="font-size:11px;background:#1a2020;color:#6ab8a8;padding:2px 8px;border-radius:999px;">💓 HRV ${e.hrv}ms</span>` : ''}
+            ${e.restingHr != null ? `<span style="font-size:11px;background:#201a1a;color:#b8886a;padding:2px 8px;border-radius:999px;">❤️ ${e.restingHr}bpm</span>` : ''}
+          </div>` : ''}
+        ${(e.eaten || e.water) ? `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">
+            ${e.eaten ? `<span style="font-size:11px;background:#1e2210;color:#a8b870;padding:2px 8px;border-radius:999px;">🥗 ${e.eaten === 'yes' ? 'eaten' : e.eaten === 'no' ? 'not eaten' : 'snack'}</span>` : ''}
+            ${e.water ? `<span style="font-size:11px;background:#101a22;color:#70a8c8;padding:2px 8px;border-radius:999px;">💧 ${e.water}</span>` : ''}
+          </div>` : ''}
+        ${e.food ? `<p class="entry-note">🥗 ${e.food}</p>` : ''}
+        ${(e.irritants && e.irritants.length) ? `<p class="entry-note" style="color:var(--text-dim);">⚠️ ${e.irritants.join(', ')}</p>` : ''}
+        ${e.activity ? `<p class="entry-note">📌 ${e.activity}</p>` : ''}
+        ${e.rest ? `<p style="font-size:12px;color:var(--text-dim);margin-top:4px;">💤 ${e.rest}m rest</p>` : ''}
+        ${e.notes ? `<p class="entry-note">— ${e.notes}</p>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function deleteEntry(id) {
+    const entries = getEntries().filter(e => e.id !== id);
+    saveEntries(entries);
+    renderHistory();
+  }
+
+  // PATTERNS
+  function renderPatterns() {
+    const entries = getEntries();
+    const el = document.getElementById('patterns-content');
+
+    if (entries.length < 3) {
+      el.innerHTML = '<div class="pattern-card"><p class="no-data">Log at least 3 entries to see patterns.</p></div>';
+      return;
+    }
+
+    // Biometrics averages
+    const bioFields = ['bodyBattery','stressScore','hrv','restingHr'];
+    const bioLabels = ['Body Battery','Stress Score','HRV (ms)','Resting HR'];
+    const bioAvgs = bioFields.map(f => {
+      const vals = entries.filter(e => e[f] != null).map(e => e[f]);
+      return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+    });
+    const hasBio = bioAvgs.some(v => v !== null);
+
+    // Energy distribution
+    const energyCounts = { low: 0, med: 0, high: 0 };
+    entries.forEach(e => { if (e.energy) energyCounts[e.energy]++; });
+    const total = entries.length;
+    const maxCount = Math.max(...Object.values(energyCounts));
+
+    // Overwhelm distribution
+    const owCounts = [0, 0, 0, 0];
+    let owTotal = 0;
+    entries.forEach(e => {
+      if (e.overwhelm !== null && e.overwhelm !== undefined) {
+        owCounts[e.overwhelm]++;
+        owTotal++;
+      }
+    });
+
+    // Symptom frequency
+    const symCounts = {};
+    entries.forEach(e => (e.symptoms || []).forEach(s => { symCounts[s] = (symCounts[s] || 0) + 1; }));
+    const topSymptoms = Object.entries(symCounts).sort((a,b) => b[1]-a[1]).slice(0, 4);
+
+    // Boom-bust detection
+    let boomBust = false;
+    const recent = entries.slice(0, 10);
+    for (let i = 0; i < recent.length - 1; i++) {
+      if (recent[i].energy === 'high' && recent[i+1].energy === 'low') boomBust = true;
+    }
+
+    // Rest patterns
+    const restVals = entries.filter(e => e.rest > 0).map(e => e.rest);
+    const avgRest = restVals.length ? Math.round(restVals.reduce((a,b) => a+b, 0) / restVals.length) : 0;
+
+    el.innerHTML = `
+      <div class="pattern-card">
+        <div class="pattern-title">Energy distribution</div>
+        ${['low','med','high'].map(level => `
+          <div class="bar-row">
+            <span class="bar-label" style="color:var(--${level})">${level}</span>
+            <div class="bar-track">
+              <div class="bar-fill ${level}" style="width:${maxCount ? (energyCounts[level]/maxCount*100) : 0}%"></div>
+            </div>
+            <span class="bar-count">${energyCounts[level]}</span>
+          </div>
+        `).join('')}
+        ${boomBust ? `<div class="pattern-insight">⚠️ Boom-bust pattern detected — high energy logs are often followed by low energy. This suggests you may be overdoing it on good days. Try doing <em>less</em> than you feel capable of on high days.</div>` : ''}
+      </div>
+
+      ${owTotal > 0 ? `
+      <div class="pattern-card">
+        <div class="pattern-title">Sensory load history</div>
+        ${['Regulated','Building','Elevated','Overloaded'].map((label, i) => `
+          <div class="bar-row">
+            <span class="bar-label" style="font-size:11px; color:${overwhelmColors[i]}">${label.slice(0,5)}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${owTotal ? (owCounts[i]/owTotal*100) : 0}%; background:${overwhelmColors[i]}"></div>
+            </div>
+            <span class="bar-count">${owCounts[i]}</span>
+          </div>
+        `).join('')}
+        ${owCounts[2] + owCounts[3] > owTotal * 0.4 ? `<div class="pattern-insight">📡 You're frequently logging elevated or overloaded sensory states. Consider what environments or times of day correlate — and whether earlier exits or sensory breaks could prevent reaching overload.</div>` : ''}
+      </div>` : ''}
+
+      ${topSymptoms.length > 0 ? `
+      <div class="pattern-card">
+        <div class="pattern-title">Most frequent symptoms</div>
+        ${topSymptoms.map(([sym, count]) => `
+          <div class="bar-row">
+            <span class="bar-label" style="width:90px;font-size:11px">${sym}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${(count/total*100)}%; background:var(--accent)"></div>
+            </div>
+            <span class="bar-count">${count}</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      ${hasBio ? `
+      <div class="pattern-card">
+        <div class="pattern-title">WellDo averages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          ${bioAvgs[0] != null ? `<div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:22px;font-family:Lora,serif;color:#7ab8b8;">${bioAvgs[0]}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Body Battery %</div></div>` : ''}
+          ${bioAvgs[1] != null ? `<div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:22px;font-family:Lora,serif;color:#a08ab8;">${bioAvgs[1]}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Avg Stress</div></div>` : ''}
+          ${bioAvgs[2] != null ? `<div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:22px;font-family:Lora,serif;color:#6ab8a8;">${bioAvgs[2]}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Avg HRV (ms)</div></div>` : ''}
+          ${bioAvgs[3] != null ? `<div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:22px;font-family:Lora,serif;color:#b8886a;">${bioAvgs[3]}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Avg Resting HR</div></div>` : ''}
+        </div>
+      </div>` : ''}
+
+      <div class="pattern-card">
+        <div class="pattern-title">Rest & recovery</div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6;">
+          ${avgRest > 0 ? `Avg rest logged: <strong style="color:var(--text)">${avgRest} min</strong> per entry.<br>` : 'No rest logged yet.<br>'}
+          Total entries: <strong style="color:var(--text)">${total}</strong> · 
+          Logging span: <strong style="color:var(--text)">${getSpan(entries)}</strong>
+        </p>
+      </div>
+    `;
+  }
+
+  function getSpan(entries) {
+    if (entries.length < 2) return '—';
+    const first = new Date(entries[entries.length - 1].timestamp);
+    const last = new Date(entries[0].timestamp);
+    const days = Math.round((last - first) / 86400000);
+    return days === 0 ? 'today' : `${days} day${days > 1 ? 's' : ''}`;
+  }
+
+
+  // EDIT STATE
+  let editId = null;
+  let editEnergy = null;
+  let editMoods = new Set();
+  let editSymptoms = new Set();
+  let editOverwhelm = null;
+  let editEaten = null;
+  let editWater = null;
+  let editIrritants = new Set();
+
+  function openEdit(id) {
+    const entries = getEntries();
+    const e = entries.find(en => en.id === id);
+    if (!e) return;
+    editId = id;
+    editEnergy = e.energy || null;
+    editMoods = new Set(e.moods || []);
+    editSymptoms = new Set(e.symptoms || []);
+    editOverwhelm = e.overwhelm != null ? e.overwhelm : null;
+    editEaten = e.eaten || null;
+    editWater = e.water || null;
+    editIrritants = new Set(e.irritants || []);
+
+    // Timestamp
+    document.getElementById('edit-timestamp').textContent = formatTime(e.timestamp);
+
+    // Energy
+    document.querySelectorAll('#edit-energy-row .energy-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.val === editEnergy);
+    });
+
+    // Moods
+    document.querySelectorAll('#edit-mood-row .mood-btn').forEach(b => {
+      b.classList.toggle('selected', editMoods.has(b.textContent.trim()));
+    });
+
+    // Symptoms
+    document.querySelectorAll('#edit-symptom-grid .symptom-btn').forEach(b => {
+      b.classList.toggle('selected', editSymptoms.has(b.dataset.sym));
+    });
+
+    // Overwhelm
+    document.querySelectorAll('#edit-overwhelm-levels .overwhelm-level').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.level) === editOverwhelm);
+    });
+
+    // Eaten
+    document.querySelectorAll('#edit-eaten-row [data-food]').forEach(b => {
+      b.classList.toggle('selected', b.dataset.food === editEaten);
+    });
+
+    // Food text
+    document.getElementById('edit-food-field').value = e.food || '';
+
+    // Irritants
+    document.querySelectorAll('#edit-irritant-panel input').forEach(c => {
+      c.checked = editIrritants.has(c.value);
+    });
+    const irritantLabel = document.getElementById('edit-irritant-label');
+    irritantLabel.textContent = editIrritants.size ? [...editIrritants].join(', ') : 'any known irritants?';
+    // Reset panel state
+    document.getElementById('edit-irritant-panel').style.display = 'none';
+    document.getElementById('edit-irritant-chevron').style.transform = 'rotate(0deg)';
+
+    // Water
+    document.querySelectorAll('#edit-water-row [data-water]').forEach(b => {
+      b.classList.toggle('selected', b.dataset.water === editWater);
+    });
+
+    // Biometrics
+    document.getElementById('edit-body-battery').value = e.bodyBattery != null ? e.bodyBattery : '';
+    document.getElementById('edit-stress-score').value = e.stressScore != null ? e.stressScore : '';
+    document.getElementById('edit-hrv').value = e.hrv != null ? e.hrv : '';
+    document.getElementById('edit-resting-hr').value = e.restingHr != null ? e.restingHr : '';
+
+    // Activity, rest, notes
+    document.getElementById('edit-activity-field').value = e.activity || '';
+    document.getElementById('edit-rest-field').value = e.rest || '';
+    document.getElementById('edit-notes-field').value = e.notes || '';
+
+    document.getElementById('edit-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeEdit() {
+    document.getElementById('edit-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    editId = null;
+  }
+
+  function editSelectEnergy(btn) {
+    document.querySelectorAll('#edit-energy-row .energy-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    editEnergy = btn.dataset.val;
+  }
+
+  function editToggleMood(btn) {
+    btn.classList.toggle('selected');
+    const mood = btn.textContent.trim();
+    if (editMoods.has(mood)) editMoods.delete(mood); else editMoods.add(mood);
+  }
+
+  function editToggleSym(btn) {
+    btn.classList.toggle('selected');
+    const sym = btn.dataset.sym;
+    if (editSymptoms.has(sym)) editSymptoms.delete(sym); else editSymptoms.add(sym);
+  }
+
+  function editSelectOverwhelm(el) {
+    document.querySelectorAll('#edit-overwhelm-levels .overwhelm-level').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    editOverwhelm = parseInt(el.dataset.level);
+  }
+
+  function editToggleFoodBtn(btn, group) {
+    const attr = group === 'eaten' ? 'data-food' : 'data-water';
+    document.querySelectorAll(`#edit-${group === 'eaten' ? 'eaten' : 'water'}-row [${attr}]`).forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group === 'eaten') editEaten = btn.dataset.food;
+    else editWater = btn.dataset.water;
+  }
+
+  function toggleEditIrritantPanel() {
+    const panel = document.getElementById('edit-irritant-panel');
+    const chevron = document.getElementById('edit-irritant-chevron');
+    const btn = document.getElementById('edit-irritant-toggle');
+    const open = panel.style.display === 'none';
+    panel.style.display = open ? 'block' : 'none';
+    chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+    btn.style.borderRadius = open ? 'var(--radius-sm) var(--radius-sm) 0 0' : 'var(--radius-sm)';
+    btn.style.borderBottomColor = open ? 'transparent' : 'var(--border)';
+  }
+
+  function updateEditIrritants() {
+    editIrritants = new Set(
+      [...document.querySelectorAll('#edit-irritant-panel input:checked')].map(c => c.value)
+    );
+    const label = document.getElementById('edit-irritant-label');
+    label.textContent = editIrritants.size ? [...editIrritants].join(', ') : 'any known irritants?';
+  }
+
+  function saveEdit() {
+    if (!editId) return;
+    const entries = getEntries();
+    const idx = entries.findIndex(e => e.id === editId);
+    if (idx === -1) return;
+
+    entries[idx] = {
+      ...entries[idx],
+      energy: editEnergy,
+      moods: [...editMoods],
+      symptoms: [...editSymptoms],
+      overwhelm: editOverwhelm,
+      eaten: editEaten,
+      food: document.getElementById('edit-food-field').value.trim(),
+      irritants: [...editIrritants],
+      water: editWater,
+      bodyBattery: parseInt(document.getElementById('edit-body-battery').value) || null,
+      stressScore: parseInt(document.getElementById('edit-stress-score').value) || null,
+      hrv: parseInt(document.getElementById('edit-hrv').value) || null,
+      restingHr: parseInt(document.getElementById('edit-resting-hr').value) || null,
+      activity: document.getElementById('edit-activity-field').value.trim(),
+      rest: parseInt(document.getElementById('edit-rest-field').value) || 0,
+      notes: document.getElementById('edit-notes-field').value.trim(),
+      editedAt: new Date().toISOString()
+    };
+
+    saveEntries(entries);
+    closeEdit();
+    renderHistory();
+    showToast();
+  }
+
+  // CSV EXPORT
+  function exportCSV() {
+    const entries = getEntries();
+    if (entries.length === 0) { alert("No entries to export yet."); return; }
+    const owLabels = ["Regulated", "Building", "Elevated", "Overloaded"];
+    const headers = ["Date","Time","Energy","Moods","Symptoms","Sensory Load","Body Battery","Stress Score","HRV (ms)","Resting HR","Eaten","Food","Irritants","Water","Activity","Rest (mins)","Notes"];
+    const rows = entries.map(e => {
+      const d = new Date(e.timestamp);
+      return [
+        d.toLocaleDateString("en-US"),
+        d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        e.energy || "",
+        (e.moods || []).join("; "),
+        (e.symptoms || []).join("; "),
+        (e.overwhelm != null) ? owLabels[e.overwhelm] : "",
+        e.bodyBattery != null ? e.bodyBattery : "",
+        e.stressScore != null ? e.stressScore : "",
+        e.hrv != null ? e.hrv : "",
+        e.restingHr != null ? e.restingHr : "",
+        e.eaten || "",
+        (e.food || "").replace(/"/g, "\x22"),
+        (e.irritants || []).join("; "),
+        e.water || "",
+        (e.activity || "").replace(/"/g, "\x22"),
+        e.rest || 0,
+        (e.notes || "").replace(/"/g, "\x22")
+      ].map(v => `"${v}"`).join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pacing-log-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // INIT
+  restoreDraft();
+  updateSubtitle();
+</script>
+</body>
+</html>
